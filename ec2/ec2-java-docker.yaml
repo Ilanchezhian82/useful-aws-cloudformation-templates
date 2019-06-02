@@ -1,0 +1,75 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 instance with java and dockers
+Resources:
+  ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairParameter
+      ImageId: ami-0ebbf2179e615c338
+      InstanceType: !Ref InstanceTypeParameter
+      Monitoring: false
+      SecurityGroupIds:
+        - !Ref sshSecurityGroup
+        - !Ref allTrafficSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+        yum update -y
+        yum install -y git docker java-1.8.0-openjdk-devel wget
+        systemctl start docker
+        curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+        mkdir /opt/maven
+        cd /opt/maven
+        echo $pwd
+        wget http://apache.mirrors.tds.net/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
+        tar -xzf /opt/maven/apache-maven-3.6.0-bin.tar.gz
+        mv /opt/maven/apache-maven-3.6.0/ /usr/local/bin/
+      Tags:
+        - Key: Name
+          Value: quick-java-docker
+  sshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: demo-java-ssh-sg
+      GroupName: demo-java-ssh-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: quick-java-docker
+      VpcId: !Ref VPCIdParameter
+  allTrafficSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: demo-java-all-sg
+      GroupName: demo-java-all-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 8000
+          ToPort: 10000
+      Tags:
+       - Key: Name
+         Value: quick-java-docker
+      VpcId: !Ref VPCIdParameter
+Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+      - t2.medium
+    Description: Enter t2.micro, m1.small, or t2.medium. Default is t2.micro.
+  KeyPairParameter:
+    Type: String
+    Default: barath_mac_pair
+    Description: Enter valid region specific keypair to be associated with the instance
+  VPCIdParameter:
+    Type: String
+    Description: Enter vpc id to be associated with the resources.

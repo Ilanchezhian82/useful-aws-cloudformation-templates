@@ -1,0 +1,48 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: simple EC2 instance with ssh access
+Resources:
+  ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: barath_mac_pair_ohio
+      ImageId: ami-0ebbf2179e615c338
+      InstanceType: t2.micro
+      Monitoring: false
+      SecurityGroupIds:
+        - !Ref sshSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        yum update -y
+      Tags:
+        - Key: Name
+          Value: quick-java-docker
+  sshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: demo-ssh-sg
+      GroupName: demo-ssh-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: quick-java-docker
+      VpcId: !Ref VPCIdParameter
+Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+    Description: Enter t2.micro, m1.small, or t2.medium. Default is t2.micro.
+  KeyPairParameter:
+    Type: String
+    Default: barath_mac_pair_ohio
+    Description: Enter valid region specific keypair to be associated with the instance
+  VPCIdParameter:
+    Type: String
+    Description: Enter vpc id to be associated with the resources.

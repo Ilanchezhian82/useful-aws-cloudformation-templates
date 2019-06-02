@@ -1,0 +1,11 @@
+---
+Resources:
+  s3-bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      AnalyticsConfigurations:
+        - AnalyticsConfiguration
+      BucketEncryption:
+        BucketEncryption
+      BucketName: demo
