@@ -1,62 +1,10 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: EC2 instance with java and dockers
-Resources:
-  ec2Instance:
-    Type: AWS::EC2::Instance
-    Properties:
-      KeyName: !Ref KeyPairParameter
-      ImageId: !Ref AMIIDParameter
-      InstanceType: !Ref InstanceTypeParameter
-      Monitoring: false
-      SecurityGroupIds:
-        - !Ref sshSecurityGroup
-        - !Ref allTrafficSecurityGroup
-      UserData: !Base64 |
-        #!/bin/bash -ex
-        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-        yum update -y
-        yum install -y git docker java-1.8.0-openjdk-devel wget
-        systemctl start docker
-        curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
-        mkdir /opt/maven
-        cd /opt/maven
-        echo $pwd
-        wget http://apache.mirrors.tds.net/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
-        tar -xzf /opt/maven/apache-maven-3.6.0-bin.tar.gz
-        mv /opt/maven/apache-maven-3.6.0/bin/ /usr/local/bin/
-      Tags:
-        - Key: Name
-          Value: quick-java-docker
-  sshSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: demo-java-ssh-sg
-      GroupName: demo-java-ssh-sg
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          CidrIp: 0.0.0.0/0
-          FromPort: 22
-          ToPort: 22
-      Tags:
-        - Key: Name
-          Value: quick-java-docker
-      VpcId: !Ref VPCIdParameter
-  allTrafficSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: demo-java-all-sg
-      GroupName: demo-java-all-sg
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          CidrIp: 0.0.0.0/0
-          FromPort: 8000
-          ToPort: 10000
-      Tags:
-       - Key: Name
-         Value: quick-java-docker
-      VpcId: !Ref VPCIdParameter
+Description: EC2 instance with jenkins and docker
 Parameters:
+  AMIIDParameter:
+    Type: String
+    Description: choose the AMI to launch the instance.
   InstanceTypeParameter:
     Type: String
     Default: t2.micro
@@ -73,6 +21,62 @@ Parameters:
   VPCIdParameter:
     Type: String
     Description: Enter vpc id to be associated with the resources.
-  AMIIDParameter:
-    Type: String
-    Description: choose the AMI to launch the instance.
+Resources:
+  ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairParameter
+      ImageId: !Ref AMIIDParameter
+      InstanceType: !Ref InstanceTypeParameter
+      Monitoring: false
+      SecurityGroupIds:
+        - !Ref sshSecurityGroup
+        - !Ref allTrafficSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+        yum update -y
+        wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+        rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+        yum install -y git docker java-1.8.0-openjdk-devel jenkins
+        curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+        mkdir /opt/maven
+        cd /opt/maven
+        echo $pwd
+        wget http://apache.mirrors.tds.net/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
+        tar -xzf /opt/maven/apache-maven-3.6.0-bin.tar.gz
+        mv /opt/maven/apache-maven-3.6.0/ /usr/local/bin/
+        systemctl start jenkins
+        systemctl start docker
+      Tags:
+        - Key: Name
+          Value: quick-jenkins-docker
+  sshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: demo-jenkins-ssh-sg
+      GroupName: demo-jenkins-ssh-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: quick-jenkins-docker
+      VpcId: !Ref VPCIdParameter
+  allTrafficSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: demo-jenkins-all-sg
+      GroupName: demo-jenkins-all-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 5000
+          ToPort: 10000
+      Tags:
+        - Key: Name
+          Value: quick-jenkins-docker
+      VpcId: !Ref VPCIdParameter
+

@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: eks workspace ec2 instance with aws iam authenticator and kubectl
+Resources:
+  EKSWorkStationEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairParameter
+      ImageId: !Ref AMIIdParameter
+      InstanceType: !Ref InstanceTypeParameter
+      Monitoring: false
+      IamInstanceProfile: !Ref EKSRoleNameParameter
+      SecurityGroupIds:
+        - !Ref EKSWorkStationInstanceSshSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+        yum update -y
+        yum install -y git docker wget
+        systemctl start docker
+        cd /opt
+        curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+        chmod +x ./kubectl
+        sudo mv kubectl /usr/local/bin/kubectl
+        curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator
+        chmod +x ./aws-iam-authenticator
+        sudo mv aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+        echo "export PATH=$PATH:/usr/local/bin/" >> ~/.bashrc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-kops-instance
+  EKSWorkStationInstanceSshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ${AWS::StackName}-eks-workstation-ssh-sg
+      GroupName: !Sub ${AWS::StackName}-eks-workstation-ssh-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-eks-workstation-ssh-sg
+      VpcId: !Ref VPCIdParameter
+Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+      - t2.medium
+    Description: Enter t2.micro, m1.small, or t2.medium. Default is t2.micro.
+  KeyPairParameter:
+    Type: String
+    Description: Enter valid region specific keypair to be associated with the instance
+  VPCIdParameter:
+    Type: String
+    Description: Enter vpc id to be associated with the resources.
+  AMIIdParameter:
+    Type: String
+    Description: choose the AMI to launch the instance.
+  EKSRoleNameParameter:
+    Type: String
+    Description: provide the eks role
+

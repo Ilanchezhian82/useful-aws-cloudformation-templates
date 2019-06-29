@@ -1,27 +1,29 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
-Description: simple EC2 instance with ssh access
+Description: ec2 instance with ansible
 Resources:
   ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      KeyName: barath_mac_pair_ohio
+      KeyName: !Ref KeyPairParameter
       ImageId: !Ref AMIIDParameter
-      InstanceType: t2.micro
+      InstanceType: !Ref InstanceTypeParameter
       Monitoring: false
       SecurityGroupIds:
         - !Ref sshSecurityGroup
       UserData: !Base64 |
         #!/bin/bash -ex
         yum update -y
+        sudo amazon-linux-extras install ansible2 -y # enable if ami is amazon linux
+        yum install ansible
       Tags:
         - Key: Name
-          Value: quick-java-docker
+          Value: !Sub ${AWS::StackName}-ansible-workstation
   sshSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: demo-ssh-sg
-      GroupName: demo-ssh-sg
+      GroupDescription: !Sub ${AWS::StackName}-ansible-workstation-sg
+      GroupName: !Sub ${AWS::StackName}-ansible-sg
       SecurityGroupIngress:
         - IpProtocol: tcp
           CidrIp: 0.0.0.0/0
@@ -29,7 +31,7 @@ Resources:
           ToPort: 22
       Tags:
         - Key: Name
-          Value: quick-java-docker
+          Value: !Sub ${AWS::StackName}-ansible-workstation-sg
       VpcId: !Ref VPCIdParameter
 Parameters:
   InstanceTypeParameter:
