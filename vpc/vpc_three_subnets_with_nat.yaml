@@ -188,11 +188,6 @@ Outputs:
   StackName:
     Description: 'Stack name.'
     Value: !Sub '${AWS::StackName}'
-  AZs:
-    Description: 'AZs'
-    Value: 2
-    Export:
-      Name: !Sub '${AWS::StackName}-AZs'
   AZ01:
     Description: 'AZ1'
     Value: !Select
@@ -225,42 +220,22 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-VPC'
   PublicSubnets:
-    Description: 'Subnets public.'
+    Description: 'public subnets'
     Value: !Join [',', [!Ref PublicSubnet01, !Ref PublicSubnet02, !Ref PublicSubnet03]]
     Export:
-      Name: !Sub '${AWS::StackName}-SubnetsPublic'
+      Name: !Sub '${AWS::StackName}-public-subnets'
   PrivateSubnets:
-    Description: 'Subnets private.'
+    Description: 'private subnets'
     Value: !Join [',', [!Ref PrivateSubnet01, !Ref PrivateSubnet02, !Ref  PrivateSubnet03]]
     Export:
-      Name: !Sub '${AWS::StackName}-SubnetsPrivate'
+      Name: !Sub '${AWS::StackName}-private-subnets'
   PrivateRouteTables:
     Description: 'Route tables private.'
     Value: !Join [',', [!Ref RouteTablePrivate]]
     Export:
-      Name: !Sub '${AWS::StackName}-RouteTablesPrivate'
+      Name: !Sub '${AWS::StackName}-private-route-table'
   PublicRouteTables:
     Description: 'Route tables public.'
     Value: !Join [',', [!Ref RouteTablePublic]]
     Export:
-      Name: !Sub '${AWS::StackName}-RouteTablesPublic'
-  PublicSubnet01:
-    Description: 'Public Subnet 01'
-    Value: !Ref PublicSubnet01
-    Export:
-      Name: !Sub '${AWS::StackName}-PublicSubnet01'
-  PrivateSubnet01:
-    Description: 'private subnet 01'
-    Value: !Ref PrivateSubnet01
-    Export:
-      Name: !Sub '${AWS::StackName}-Subnet01Private'
-  PublicSubnet02:
-    Description: 'Subnet B public.'
-    Value: !Ref PublicSubnet02
-    Export:
-      Name: !Sub '${AWS::StackName}-Subnet02Public'
-  PrivateSubnet02:
-    Description: 'Subnet 02 private.'
-    Value: !Ref PrivateSubnet01
-    Export:
-      Name: !Sub '${AWS::StackName}-Subnet02Private'
+      Name: !Sub '${AWS::StackName}-public-route-table'
