@@ -25,7 +25,7 @@ Resources:
           Value: !Sub
             - "${AWS::StackName}-public-${AZ}"
             - AZ: !Select
-                - 0
+                - 1
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PrivateSubnet:
     Type: AWS::EC2::Subnet
@@ -40,7 +40,7 @@ Resources:
           Value: !Sub
             - "${AWS::StackName}-public-${AZ}"
             - AZ: !Select
-                - 0
+                - 1
                 - Fn::GetAZs: !Ref 'AWS::Region'
   RouteTablePrivate:
     Type: 'AWS::EC2::RouteTable'
@@ -84,15 +84,26 @@ Resources:
       RouteTableId: !Ref RouteTablePublic
       DestinationCidrBlock: '0.0.0.0/0'
       GatewayId: !Ref InternetGateway
+  EIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NatGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt 'EIP.AllocationId'
+      SubnetId: !Ref PublicSubnet
+  NatGatewayRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: NatGateway
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway
 Outputs:
   StackName:
     Description: 'Stack name.'
     Value: !Sub '${AWS::StackName}'
-  AZ:
-    Description: 'AZ1'
-    Value: !Select [0, !GetAZs '']
-    Export:
-      Name: !Sub '${AWS::StackName}-AZ'
   CidrBlock:
     Description: 'The set of IP addresses for the VPC.'
     Value: !GetAtt 'VPC.CidrBlock'
@@ -113,3 +124,4 @@ Outputs:
     Value: !Ref PrivateSubnet
     Export:
       Name: !Sub '${AWS::StackName}-private-subnet'
+

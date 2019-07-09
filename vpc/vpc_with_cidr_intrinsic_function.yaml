@@ -1,41 +1,46 @@
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: vpc with 3 public and private subnets in 3 az zones
+Description: vpc with single private and public subnet
+Parameters:
+  VPCCIDR:
+    Type: String
+    Description: CIDR block to be created
+    Default: 10.0.0.0/16
 Resources:
   VPC:
-    Type: 'AWS::EC2::VPC'
+    Type: "AWS::EC2::VPC"
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref VPCCIDR
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
         - Key: Name
           Value:  !Join ['', [!Ref "AWS::StackName", "-vpc" ]]
   PublicSubnet01:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: !Select [0,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
         - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: true
       Tags:
-       - Key: Name
-         Value: !Sub
+        - Key: Name
+          Value: !Sub
             - "${AWS::StackName}-public-${AZ}"
             - AZ: !Select
                 - 0
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PublicSubnet02:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
+      CidrBlock: !Select [1,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
           Value: !Sub
@@ -44,13 +49,13 @@ Resources:
                 - 1
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PublicSubnet03:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: !Select [2,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
-      - 2
-      - Fn::GetAZs: !Ref 'AWS::Region'
+        - 2
+        - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -60,47 +65,47 @@ Resources:
                 - 2
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PrivateSubnet01:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: !Select [3,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
         - 0
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
           Value: !Sub
-            - "${AWS::StackName}-public-${AZ}"
+            - "${AWS::StackName}-private-${AZ}"
             - AZ: !Select
                 - 0
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PrivateSubnet02:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.4.0/24
+      CidrBlock: !Select [4,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
         - 1
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
           Value: !Sub
-            - "${AWS::StackName}-public-${AZ}"
+            - "${AWS::StackName}-private-${AZ}"
             - AZ: !Select
                 - 1
                 - Fn::GetAZs: !Ref 'AWS::Region'
   PrivateSubnet03:
-    Type: 'AWS::EC2::Subnet'
+    Type: "AWS::EC2::Subnet"
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.5.0/24
+      CidrBlock: !Select [5,!Cidr [!Ref VPCCIDR,6,8]]
       AvailabilityZone: !Select
         - 2
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
           Value: !Sub
-            - "${AWS::StackName}-public-${AZ}"
+            - "${AWS::StackName}-private-${AZ}"
             - AZ: !Select
                 - 2
                 - Fn::GetAZs: !Ref 'AWS::Region'
@@ -133,7 +138,6 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet03
       RouteTableId: !Ref RouteTablePublic
-
   RouteTableAssociationPrivateSubnet01:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -155,14 +159,14 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-internet-gateway
-  VPCGatewayAttachment:
+  InternetGatewayAttachment:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
   InternetGatewayRoute:
     Type: 'AWS::EC2::Route'
-    DependsOn: VPCGatewayAttachment
+    DependsOn: InternetGatewayAttachment
     Properties:
       RouteTableId: !Ref RouteTablePublic
       DestinationCidrBlock: '0.0.0.0/0'
@@ -188,34 +192,13 @@ Outputs:
   StackName:
     Description: 'Stack name.'
     Value: !Sub '${AWS::StackName}'
-  AZ01:
-    Description: 'AZ1'
-    Value: !Select
-      - 0
-      - Fn::GetAZs: !Ref 'AWS::Region'
-    Export:
-      Name: !Sub '${AWS::StackName}-AZ01'
-  AZ02:
-    Description: 'AZ2'
-    Value: !Select
-      - 1
-      - Fn::GetAZs: !Ref 'AWS::Region'
-    Export:
-      Name: !Sub '${AWS::StackName}-AZ02'
-  AZ03:
-    Description: 'AZ2'
-    Value: !Select
-      - 2
-      - Fn::GetAZs: !Ref 'AWS::Region'
-    Export:
-      Name: !Sub '${AWS::StackName}-AZ03'
   CidrBlock:
     Description: 'The set of IP addresses for the VPC.'
     Value: !GetAtt 'VPC.CidrBlock'
     Export:
       Name: !Sub '${AWS::StackName}-CidrBlock'
   VPC:
-    Description: 'VPC'
+    Description: 'VPC.'
     Value: !Ref VPC
     Export:
       Name: !Sub '${AWS::StackName}-VPC'
@@ -226,16 +209,9 @@ Outputs:
       Name: !Sub '${AWS::StackName}-public-subnets'
   PrivateSubnets:
     Description: 'private subnets'
-    Value: !Join [',', [!Ref PrivateSubnet01, !Ref PrivateSubnet02, !Ref  PrivateSubnet03]]
+    Value: !Join [',', [!Ref PrivateSubnet01, !Ref PrivateSubnet02, !Ref PrivateSubnet03]]
     Export:
       Name: !Sub '${AWS::StackName}-private-subnets'
-  PrivateRouteTables:
-    Description: 'Route tables private.'
-    Value: !Join [',', [!Ref RouteTablePrivate]]
-    Export:
-      Name: !Sub '${AWS::StackName}-private-route-table'
-  PublicRouteTables:
-    Description: 'Route tables public.'
-    Value: !Join [',', [!Ref RouteTablePublic]]
-    Export:
-      Name: !Sub '${AWS::StackName}-public-route-table'
+
+
+
