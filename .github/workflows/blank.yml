@@ -41,4 +41,21 @@ jobs:
           pip -v
           pip install cfn-lint
           cfn-lint ec2/*.yaml
+  build_with_docker:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    container:
+      image: cfn-python-lint:latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      - name: cfn-lint step
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+          python -v
+          pip -v
+          pip install cfn-lint
+          cfn-lint ec2/*.yaml
+
           
