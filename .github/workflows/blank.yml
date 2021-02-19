@@ -52,10 +52,8 @@ jobs:
       - name: cfn-lint step
         run: |
           echo Add other actions to build,
-          echo test, and deploy your project.
-          python -v
-          pip -v
-          pip install cfn-lint
+          echo test, and deploy your project. 
+          ls -ltra
           cfn-lint ec2/*.yaml
 
           
